@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Giriş — Nəzarət Paneli</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css?v={{ asset_version }}">
+</head>
+<body class="login-body">
+
+<div class="login-card">
+  <div class="login-mark">NƏ</div>
+  <h1>Nəzarət Paneli</h1>
+  <p class="login-sub">Davam etmək üçün daxil olun</p>
+  <p class="login-lan-hint">Telefon üçün: <span>http://{{ lan_ip }}:8000</span></p>
+
+  <form id="login-form">
+    <label class="field login-field">
+      <span>İstifadəçi adı</span>
+      <input type="text" id="login-username" autocomplete="username" required autofocus>
+    </label>
+    <label class="field login-field">
+      <span>Şifrə</span>
+      <input type="password" id="login-password" autocomplete="current-password" required>
+    </label>
+    <div id="login-error" class="login-error hidden"></div>
+    <button type="submit" class="login-btn">Daxil ol</button>
+  </form>
+</div>
+
+<script>
+function isMobileDevice() {
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth < 700;
+}
+
+document.getElementById("login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errorBox = document.getElementById("login-error");
+  errorBox.classList.add("hidden");
+
+  const username = document.getElementById("login-username").value.trim();
+  const password = document.getElementById("login-password").value;
+
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      errorBox.textContent = data.detail || "Giriş uğursuz oldu";
+      errorBox.classList.remove("hidden");
+      return;
+    }
+    window.location.href = isMobileDevice() ? "/mobile" : "/";
+  } catch (err) {
+    errorBox.textContent = "Server ilə əlaqə xətası";
+    errorBox.classList.remove("hidden");
+  }
+});
+</script>
+</body>
+</html>

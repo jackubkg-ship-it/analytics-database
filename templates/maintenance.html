@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Texniki baxış (ТО) — Nəzarət Paneli</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css?v={{ asset_version }}">
+<link rel="stylesheet" href="/static/maintenance.css?v={{ asset_version }}">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-title">
+    <a href="/" class="topbar-mark" style="text-decoration:none;">NƏ</a>
+    <div>
+      <h1>Texniki baxış (ТО)</h1>
+      <p>Regламент, naработка və statuslar</p>
+    </div>
+  </div>
+  <div class="topbar-controls">
+    <a class="topbar-icon-btn" href="/" style="text-decoration:none;">← Nəzarət Paneli</a>
+    <div class="topbar-user">
+      <span class="topbar-user-name">{{ username }}</span>
+      <button class="topbar-icon-btn" id="logout-btn">Çıxış</button>
+    </div>
+  </div>
+</header>
+
+<main class="mt-wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Status lövhəsi</h2></div>
+    <table class="mt-table" id="status-table">
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>DQ №-si</th>
+          <th>Marka</th>
+          <th>ТО növü</th>
+          <th>Son yerinə yetirilmə</th>
+          <th>Növbəti (vaxt)</th>
+          <th>Növbəti (naработка)</th>
+          <th>Qayda mənbəyi</th>
+        </tr>
+      </thead>
+      <tbody id="status-table-body"></tbody>
+    </table>
+  </section>
+
+  <div class="mt-grid">
+    <section class="panel">
+      <div class="panel-head"><h2>Texnika reyestri</h2></div>
+      <div id="equipment-list" class="mt-list"></div>
+      <form id="equipment-form" class="admin-form">
+        <label><span>DQ №-si</span><input type="text" id="eq-dq" required placeholder="məs. 99-JS-942"></label>
+        <label><span>Marka</span><input type="text" id="eq-brand" required placeholder="məs. Kamaz"></label>
+        <button type="submit">Əlavə et</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>ТО növləri</h2></div>
+      <div id="types-list" class="mt-list"></div>
+      <form id="type-form" class="admin-form">
+        <label><span>Ad</span><input type="text" id="type-name" required placeholder="məs. Motor yağı dəyişimi"></label>
+        <button type="submit">Əlavə et</button>
+      </form>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Reglament (qaydalar)</h2></div>
+    <div id="rules-list" class="mt-list"></div>
+    <form id="rule-form" class="admin-form mt-form-row">
+      <label>
+        <span>Səviyyə</span>
+        <select id="rule-scope">
+          <option value="brand">Marka üzrə</option>
+          <option value="equipment">Konkret maşın (DQ №-si)</option>
+        </select>
+      </label>
+      <label><span>Marka / DQ №-si</span><input type="text" id="rule-scope-value" required></label>
+      <label>
+        <span>ТО növü</span>
+        <select id="rule-type"></select>
+      </label>
+      <label><span>Vaxt intervalı (gün)</span><input type="number" id="rule-days" min="1"></label>
+      <label><span>Naработка intervalı</span><input type="number" id="rule-usage" min="1"></label>
+      <label>
+        <span>Ölçü vahidi</span>
+        <select id="rule-unit">
+          <option value="">—</option>
+          <option value="km">km</option>
+          <option value="hours">saat</option>
+        </select>
+      </label>
+      <button type="submit">Qayda yarat</button>
+    </form>
+  </section>
+
+  <div class="mt-grid">
+    <section class="panel">
+      <div class="panel-head"><h2>Naработka göstəricisi əlavə et</h2></div>
+      <form id="usage-form" class="admin-form">
+        <label><span>DQ №-si</span><input type="text" id="usage-dq" required></label>
+        <label>
+          <span>Ölçü vahidi</span>
+          <select id="usage-unit">
+            <option value="km">km</option>
+            <option value="hours">saat</option>
+          </select>
+        </label>
+        <label><span>Göstərici</span><input type="number" id="usage-value" step="0.01" required></label>
+        <label><span>Tarix</span><input type="date" id="usage-date" required></label>
+        <button type="submit">Yadda saxla</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>ТО yerinə yetirildi</h2></div>
+      <form id="event-form" class="admin-form">
+        <label><span>DQ №-si</span><input type="text" id="event-dq" required></label>
+        <label>
+          <span>ТО növü</span>
+          <select id="event-type"></select>
+        </label>
+        <label><span>Tarix</span><input type="date" id="event-date" required></label>
+        <label><span>Naработка (km) - istəyə görə</span><input type="number" id="event-km" step="0.01"></label>
+        <label><span>Naработка (saat) - istəyə görə</span><input type="number" id="event-hours" step="0.01"></label>
+        <label><span>Qeyd</span><input type="text" id="event-note"></label>
+        <button type="submit">Qeyd et</button>
+      </form>
+    </section>
+  </div>
+
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script src="/static/maintenance.js?v={{ asset_version }}"></script>
+</body>
+</html>

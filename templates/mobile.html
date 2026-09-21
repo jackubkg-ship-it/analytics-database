@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Nəzarət — Mobil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/mobile.css?v={{ asset_version }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header class="m-topbar">
+  <div class="m-topbar-title">
+    <span class="m-mark">NƏ</span>
+    <span class="m-username">{{ username }}</span>
+  </div>
+  <div class="m-topbar-actions">
+    {% if role == 'admin' %}
+    <label class="m-icon-btn" title="Fayl yüklə" for="m-file-input" style="cursor:pointer;">📤</label>
+    <input type="file" id="m-file-input" accept=".xlsx,.xlsm" hidden>
+    {% endif %}
+    <a href="/" class="m-icon-btn" title="Desktop versiya">🖥</a>
+    <button class="m-icon-btn" id="m-logout-btn" title="Çıxış">⏻</button>
+  </div>
+</header>
+
+<main class="m-content">
+
+  <!-- ---------- Axtar ---------- -->
+  <section id="tab-search" class="m-tab">
+    <div class="m-search-box">
+      <input type="text" id="m-search-input" placeholder="DQ №-si axtar (məs. 99-JS-942)" autocomplete="off">
+    </div>
+    <div class="m-chip-row">
+      <div class="m-chip active" data-view="brand">Marka üzrə</div>
+      <div class="m-chip" data-view="number">Nömrəyə görə</div>
+    </div>
+    <button class="m-back-btn hidden" id="m-search-back-btn">← Markalar</button>
+    <div id="m-search-results" class="m-card-list"></div>
+    <p id="m-search-empty" class="m-hint hidden">Nəticə tapılmadı</p>
+  </section>
+
+  <!-- ---------- Xülasə ---------- -->
+  <section id="tab-summary" class="m-tab">
+    <label class="m-field">
+      <span>Dövr</span>
+      <select id="m-period-select"></select>
+    </label>
+    <div id="m-summary-list" class="m-card-list"></div>
+  </section>
+
+  <!-- ---------- Brand drill-down (within Xülasə) ---------- -->
+  <section id="tab-brand" class="m-tab">
+    <button class="m-back-btn" data-back="tab-summary">← Geri</button>
+    <h2 id="m-brand-title" class="m-section-title"></h2>
+    <button class="m-toggle-btn" id="m-view-fleet-btn">Servisdə olan texnika</button>
+    <div class="m-chart-wrap"><canvas id="m-brand-chart"></canvas></div>
+    <div id="m-brand-list" class="m-card-list"></div>
+  </section>
+
+  <!-- ---------- Equipment history detail ---------- -->
+  <section id="tab-history" class="m-tab">
+    <button class="m-back-btn" id="m-history-back">← Geri</button>
+    <h2 id="m-history-title" class="m-section-title"></h2>
+
+    <label class="m-field">
+      <span>Dövr</span>
+      <select id="m-history-period"></select>
+    </label>
+    <div id="m-history-tabs" class="m-chip-row"></div>
+    <div id="m-history-list" class="m-card-list"></div>
+  </section>
+
+  <!-- ---------- İllik ---------- -->
+  <section id="tab-yearly" class="m-tab">
+    <label class="m-field">
+      <span>İl</span>
+      <input type="number" id="m-year-input" step="1">
+    </label>
+
+    <div id="m-yearly-cards" class="m-card-list"></div>
+
+    <h3 class="m-sub-title">Podratçılar üzrə aylıq xərclər</h3>
+    <div class="m-chart-wrap"><canvas id="m-yearly-chart"></canvas></div>
+
+    <h3 class="m-sub-title">Marka üzrə illik müqayisə</h3>
+    <div class="m-chart-wrap"><canvas id="m-brand-bar-chart"></canvas></div>
+
+    <h3 class="m-sub-title">Marka üzrə aylıq trend</h3>
+    <div class="m-chart-wrap"><canvas id="m-brand-line-chart"></canvas></div>
+  </section>
+
+  <!-- ---------- ТО ---------- -->
+  <section id="tab-maintenance" class="m-tab">
+    <h2 class="m-section-title">Status lövhəsi</h2>
+    <div id="m-status-list" class="m-card-list"></div>
+
+    <h2 class="m-section-title">Naработka əlavə et</h2>
+    <form id="m-usage-form" class="m-form">
+      <label><span>DQ №-si</span><input type="text" id="m-usage-dq" required></label>
+      <label>
+        <span>Ölçü vahidi</span>
+        <select id="m-usage-unit"><option value="km">km</option><option value="hours">saat</option></select>
+      </label>
+      <label><span>Göstərici</span><input type="number" id="m-usage-value" step="0.01" required></label>
+      <label><span>Tarix</span><input type="date" id="m-usage-date" required></label>
+      <button type="submit">Yadda saxla</button>
+    </form>
+
+    <h2 class="m-section-title">ТО yerinə yetirildi</h2>
+    <form id="m-event-form" class="m-form">
+      <label><span>DQ №-si</span><input type="text" id="m-event-dq" required></label>
+      <label><span>ТО növü</span><select id="m-event-type"></select></label>
+      <label><span>Tarix</span><input type="date" id="m-event-date" required></label>
+      <label><span>Naработka (km)</span><input type="number" id="m-event-km" step="0.01"></label>
+      <label><span>Naработka (saat)</span><input type="number" id="m-event-hours" step="0.01"></label>
+      <label><span>Qeyd</span><input type="text" id="m-event-note"></label>
+      <button type="submit">Qeyd et</button>
+    </form>
+  </section>
+
+</main>
+
+<nav class="m-tabbar" id="m-tabbar">
+  <button class="m-tab-btn" data-tab="tab-search">🔍<span>Axtar</span></button>
+  <button class="m-tab-btn" data-tab="tab-summary">📊<span>Xülasə</span></button>
+  <button class="m-tab-btn" data-tab="tab-yearly">📈<span>İllik</span></button>
+  <button class="m-tab-btn" data-tab="tab-maintenance">🔧<span>ТО</span></button>
+</nav>
+
+<div id="m-toast" class="m-toast"></div>
+
+<script>
+  window.CURRENT_USER = { username: "{{ username }}", role: "{{ role }}" };
+</script>
+<script src="/static/mobile.js?v={{ asset_version }}"></script>
+</body>
+</html>
