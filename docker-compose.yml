@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: contractors_user
+      POSTGRES_PASSWORD: contractors_pass
+      POSTGRES_DB: contractors_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql+psycopg2://contractors_user:contractors_pass@db:5432/contractors_db
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:
