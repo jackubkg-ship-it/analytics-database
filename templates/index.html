@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nəzarət — Təmir Xərcləri</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css?v={{ asset_version }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-title">
+    <span class="topbar-mark">NƏ</span>
+    <div>
+      <h1>Nəzarət Paneli</h1>
+      <p>Podratçılar üzrə təmir xərclərinin müqayisəsi</p>
+    </div>
+  </div>
+
+  <div class="topbar-controls">
+    <label class="field search-field">
+      <span>Texnika axtar (DQ №-si)</span>
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="məs. 99-JS-942" autocomplete="off">
+        <div id="search-results" class="search-results hidden"></div>
+      </div>
+    </label>
+
+    <button class="topbar-icon-btn" id="repair-info-btn" style="margin-top:16px;">Təmir məlumatları</button>
+
+    <label class="field">
+      <span>Dövr</span>
+      <select id="period-select"></select>
+    </label>
+
+    <label class="upload-btn" id="upload-label" {% if role != 'admin' %}style="display:none"{% endif %}>
+      <input type="file" id="file-input" accept=".xlsx,.xlsm" hidden>
+      <span id="upload-text">Fayl yüklə (.xlsx)</span>
+    </label>
+
+    <div class="topbar-user">
+      {% if role == 'admin' %}
+      <button class="topbar-icon-btn" id="admin-users-btn">İstifadəçilər</button>
+      <a class="topbar-icon-btn" href="/maintenance" style="text-decoration:none;">Texniki xidmət (TX)</a>
+      {% endif %}
+      <a class="topbar-icon-btn" href="/mobile" style="text-decoration:none;">📱 Mobil</a>
+      <span class="topbar-user-name">{{ username }}</span>
+      <span class="topbar-user-role">{{ role_label }}</span>
+      <button class="topbar-icon-btn" id="logout-btn">Çıxış</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="yearly-panel">
+    <div class="yearly-head">
+      <div>
+        <h2>İllik müqayisə</h2>
+        <p>Podratçılar üzrə aylıq təmir xərcləri</p>
+        <p class="yearly-hint">Aylıq rəqəm - həmin ay üçün unikal texnika. İllik say təkrarsızdır (bir texnika bir dəfə sayılır).</p>
+      </div>
+      <label class="field">
+        <span>İl</span>
+        <input type="number" id="year-select" class="year-input" step="1">
+      </label>
+    </div>
+    <div class="yearly-body">
+      <div class="yearly-col yearly-col-contractors">
+        <div id="yearly-summary-cards" class="yearly-summary-cards"></div>
+        <div class="yearly-chart-wrap">
+          <canvas id="yearly-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="yearly-col yearly-col-brand">
+        <h3 class="yearly-col-title">Marka üzrə illik müqayisə</h3>
+        <div class="yearly-chart-wrap">
+          <canvas id="brand-bar-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="yearly-col yearly-col-brand">
+        <h3 class="yearly-col-title">Marka üzrə aylıq trend</h3>
+        <div class="yearly-chart-wrap">
+          <canvas id="brand-line-chart"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div id="dashboard-root" class="dashboard-grid">
+    <p class="empty-state">Yüklənir...</p>
+  </div>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<!-- Popup: список всей техники (открывается кнопкой "Təmir məlumatları") -->
+<div id="modal-all-equipment" class="modal-overlay hidden">
+  <div class="modal-panel">
+    <div class="modal-head">
+      <h2 id="all-equipment-title">Bütün texnika</h2>
+      <button class="modal-close" data-close="modal-all-equipment">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="contractor-tabs" id="all-equipment-view-tabs">
+        <div class="contractor-tab active" data-view="brand"><span>Marka üzrə</span></div>
+        <div class="contractor-tab" data-view="number"><span>Nömrəyə görə</span></div>
+      </div>
+      <button class="topbar-icon-btn hidden" id="all-equipment-back-btn" style="margin-bottom:12px;">← Markalar</button>
+      <ul id="all-equipment-list" class="equipment-list"></ul>
+    </div>
+  </div>
+</div>
+
+<!-- Popup: история ремонта конкретной единицы техники -->
+<div id="modal-history" class="modal-overlay hidden">
+  <div class="modal-panel modal-panel-wide">
+    <div class="modal-head">
+      <h2 id="modal-history-title">—</h2>
+      <button class="modal-close" data-close="modal-history">&times;</button>
+    </div>
+    <div class="modal-body">
+      <label class="field" style="margin-bottom:14px;">
+        <span>Dövr</span>
+        <select id="modal-history-period"></select>
+      </label>
+      <div id="contractor-tabs" class="contractor-tabs"></div>
+      <div id="month-chips" class="month-chips"></div>
+      <div class="table-scroll">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Tarix</th>
+              <th>İşin təsviri</th>
+              <th>Say</th>
+              <th>Ölçü</th>
+              <th>Qiymət</th>
+              <th>Yekun</th>
+              <th>İcraçı</th>
+              <th>Ərazi</th>
+              <th>Podratçı</th>
+            </tr>
+          </thead>
+          <tbody id="modal-history-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Popup: управление пользователями (только для админа) -->
+<div id="modal-admin" class="modal-overlay hidden">
+  <div class="modal-panel">
+    <div class="modal-head">
+      <h2>İstifadəçilər</h2>
+      <button class="modal-close" data-close="modal-admin">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="admin-users-list" class="admin-users-list"></div>
+
+      <form id="admin-create-form" class="admin-form">
+        <label>
+          <span>İstifadəçi adı</span>
+          <input type="text" id="admin-new-username" required minlength="2">
+        </label>
+        <label>
+          <span>Şifrə</span>
+          <input type="password" id="admin-new-password" required minlength="4">
+        </label>
+        <label>
+          <span>Rol</span>
+          <select id="admin-new-role">
+            <option value="viewer_charts">Yalnız qrafiklər</option>
+            <option value="viewer_full">Qrafiklər + tarixçə</option>
+            <option value="admin">Admin (tam giriş)</option>
+          </select>
+        </label>
+        <button type="submit">Yarat</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  window.CURRENT_USER = { username: "{{ username }}", role: "{{ role }}" };
+</script>
+<script src="/static/app.js?v={{ asset_version }}"></script>
+</body>
+</html>
